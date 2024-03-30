@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fitness Tracking Live Updates</title>
+    <style>
+        #startStopInput {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fitness Tracking Live Updates</h1>
+    <div id="data"></div>
+
+    <label for="inputMethod">Eingabemethode:</label>
+    <select id="inputMethod">
+        <option value="manual">Manuelle Eingabe</option>
+        <option value="startStop">Start/Stop</option>
+    </select>
+
+    <div id="manualInput">
+        <h2>Trainingsdaten manuell eingeben:</h2>
+        <label for="steps">Schritte:</label>
+        <input type="number" id="steps" name="steps">
+        <label for="calories">Kalorien:</label>
+        <input type="number" id="calories" name="calories">
+        <label for="distance">Distanz:</label>
+        <input type="number" id="distance" name="distance">
+        <button id="submitData">Daten absenden</button>
+    </div>
+
+    <div id="startStopInput">
+        <button id="toggleActivity">Aktivität starten/stoppen</button>
+        <label for="activity">Aktivität:</label>
+        <input type="text" id="activity" name="activity">
+        <button id="setActivity">Aktivität festlegen</button>
+    </div>
+
+    <script>
+        const evtSource = new EventSource('/events');
+        evtSource.onmessage = function(event) {
+            const eventData = JSON.parse(event.data);
+            const dataElement = document.getElementById('data');
+
+            // Aktualisiere die Seite mit den neuen Daten
+            dataElement.innerHTML = `<p>Zeit: ${eventData.timestamp}</p>
+                                     <p>Schritte: ${eventData.steps}</p>
+                                     <p>Kalorien: ${eventData.calories}</p>
+                                     <p>Distanz: ${eventData.distance.toFixed(2)} m</p>
+                                     <p>Belohnungen: ${eventData.rewards}</p>`; 
+
+        };
+
+        // Event-Listener für den Start/Stop-Button --> neu Button
+        document.getElementById('toggleActivity').addEventListener('click', function() {
+            const activity = document.getElementById('activity').value;
+            if (!activity) {
+             alert('Bitte geben Sie eine Aktivität ein, bevor Sie starten/stoppen.');
+             return;
+            }
+            
+            // Sende eine POST-Anforderung an den Server, um die Aktivität zu starten/zu stoppen
+            fetch('/toggleActivity', {
+                method: 'POST',
+            });
+        });
+
+        document.getElementById('setActivity').addEventListener('click', function() {
+            const activity = document.getElementById('activity').value;
+            // Sende eine POST-Anforderung an den Server, um die Aktivität zu aktualisieren
+            fetch('/setActivity', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ activity }),
+            });
+        });
+
+         // Event-Listener für den Datenabsenden-Button --> neu
+         document.getElementById('submitData').addEventListener('click', function() {
+            const steps = document.getElementById('steps').value;
+            const calories = document.getElementById('calories').value;
+            const distance = document.getElementById('distance').value;
+            // Sende eine POST-Anforderung an den Server, um die Daten zu aktualisieren
+            fetch('/inputData', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ steps, calories, distance }),
+            });
+        });
+        
+        document.getElementById('inputMethod').addEventListener('change', function() {
+            const method = this.value;
+            if (method === 'manual') {
+                document.getElementById('manualInput').style.display = 'block';
+                document.getElementById('startStopInput').style.display = 'none';
+            } else {
+                document.getElementById('manualInput').style.display = 'none';
+                document.getElementById('startStopInput').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
